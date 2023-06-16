@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState, useRef} from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import { animateScroll as scroll } from 'react-scroll';
 import SearchbarHeader from '../Searchbar';
@@ -11,303 +11,139 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ContainerDiv } from './App.styled';
 
 function App () {
- useState
-  state = {
-    searchQuery: '',
-    showModal: false,
-    selectedImage: '',
-    gallery: [],
-    page: 1,
-    showLoadMoreBtn: false,
-    loading: false,
-    perPage: perPage,
-  };
+  const [ searchQuery, setSearchQuery ] = useState('');
+  const [ showModal, setShowModal ] = useState(false);
+  const [ selectedImage, setSelectedImage ] = useState('')
+  const [ gallery, setGallery ] = useState([]);
+  const [ page, setPage ] = useState(1);
+  const [ showLoadMoreBtn, setShowLoadMoreBtn ] = useState(false)
+  const [ isLoading, setIsLoading ] = useState(false)
 
-  async function componentDidUpdate(prevProps, prevState) {
-    const { searchQuery, page } = this.state;
-  
-    if (prevState.searchQuery !== searchQuery || prevState.page !== page) {
-      if (prevState.searchQuery !== searchQuery) {
-        this.clearGallery();
-      }
-  
-      try {
-        this.setState({ loading: true });
-  
-        const newGallery = await this.fetchGalleryData();
-  
-        if (newGallery.length === 0) {
-          handleNoImages();
-        } else if (newGallery.length < this.state.perPage && newGallery.length > 0) {
-          this.handleEndOfResults();
-        } else {
-          this.updateGallery(newGallery);
-        }
-  
-        this.scrollToOldGallery();
-      } catch (error) {
-        this.handleError();
-      }
-    }
-  }
+  const prevSearchQueryRef = useRef('');
 
-  clearGallery() {
-    this.setState({ showLoadMoreBtn: false, gallery: [] });
-  }
-  
-  async fetchGalleryData() {
-    const { searchQuery, page, perPage } = this.state;
-    return await fetchGallery(searchQuery, page, perPage);
-  }
-  
-  handleNoImages() {
-    toast.error('Sorry, there are no images matching your search query. Please try again.');
-    this.setState({ loading: false });
-  }
-  
-  handleEndOfResults() {
-    toast.info("We're sorry, but you've reached the end of search results.");
-    this.setState({ loading: false, showLoadMoreBtn: false });
-  }
-  
-  updateGallery(newGallery) {
-    this.setState(prevState => ({
-      gallery: [...prevState.gallery, ...newGallery],
-      loading: false,
-      showLoadMoreBtn: newGallery.length >= this.state.perPage,
-    }));
-  }
-  
-  handleError() {
-    toast.error('An error occurred while loading images.');
-    this.setState({ loading: false });
-  }
-
-  scrollToOldGallery = () => {
-    if (this.state.showLoadMoreBtn) {
+  const scrollToOldGallery = () => {
       scroll.scrollToBottom({
         duration: 500,
         smooth: 'easeInOutQuad',
       });
+  };
+
+  async function fetchGalleryData() {
+    return await fetchGallery(searchQuery, page, perPage);
+  };
+
+  useEffect(() => {
+    if(searchQuery === '') {
+      return;
     }
-    return;
+    
+    const fetchData = async () => {
+      
+      if (prevSearchQueryRef.current !== searchQuery) {
+        clearGallery();
+        prevSearchQueryRef.current = searchQuery;
+      }
+      try {
+        setIsLoading(true);
+    
+        const newGallery = await fetchGalleryData();
+
+        if (newGallery.length === 0) {
+          handleNoImages();
+        } else if (newGallery.length < perPage && newGallery.length > 0) {
+          handleEndOfResults();
+        };
+          updateGallery(newGallery);
+          if (page > 1){
+            scrollToOldGallery();
+          }
+          
+        
+
+      } catch (error) {
+        handleError();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+  
+    fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, page]);
+
+  function updateGallery(newGallery) {
+    setGallery(prevGallery => [...prevGallery, ...newGallery]);
+    setIsLoading(false);
+    setShowLoadMoreBtn(newGallery.length >= perPage);
+  }
+
+  function clearGallery() {
+    setShowLoadMoreBtn(false);
+    setGallery([]);
+  };
+  
+  function handleNoImages() {
+    toast.error('Sorry, there are no images matching your search query. Please try again.');
+    setIsLoading(false);
+  }
+  
+  function handleEndOfResults() {
+    toast.info("We're sorry, but you've reached the end of search results.");
+    setIsLoading(false);
+    setShowLoadMoreBtn(false);
+  }
+  
+  function handleError() {
+    toast.error('An error occurred while loading images.');
+    setIsLoading(false);
+  }
+
+  const handleFormSubmit = searchQuery => {
+    setSearchQuery(searchQuery);
+    setPage(1);
   };
 
-  handleFormSubmit = searchQuery => {
-    const { searchQuery: prevSearchQuery } = this.state;
-    if (prevSearchQuery !== searchQuery) {
-      this.setState({
-        searchQuery,
-        page: 1,
-      });
-    }
+  const handleImageClick = (imageUrl, tags) => {
+    setSelectedImage({url: imageUrl, alt: tags});
+    setShowModal(true);
   };
 
-  handleImageClick = (imageUrl, tags) => {
-    this.setState({
-      selectedImage: { url: imageUrl, alt: tags },
-      showModal: true,
-    });
+  const handleCloseModal = () => {
+    setSelectedImage('');
+    setShowModal(false);
   };
 
-  handleCloseModal = () => {
-    this.setState({ selectedImage: '', showModal: false });
+  const handleLoadMore = () => {
+    setPage(prevPage => prevPage + 1);
   };
-
-  handleLoadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
-  };
-
-  render() {
-    const { gallery, showModal, selectedImage, showLoadMoreBtn, loading } =
-      this.state;
 
     return (
       <ContainerDiv>
-        <SearchbarHeader onSubmit={this.handleFormSubmit} />
+        <SearchbarHeader onSubmit={handleFormSubmit} />
 
-        {gallery.length > 0 && (
+        {gallery.length !== 0 && (
           <ImageGallery
             gallery={gallery}
-            handleImageClick={this.handleImageClick}
+            handleImageClick={handleImageClick}
           />
         )}
 
-        {loading && <LoaderReact />}
+        {isLoading && <LoaderReact />}
 
         {showModal && (
-          <Modal onClose={this.handleCloseModal}>
+          <Modal onClose={handleCloseModal}>
             <img src={selectedImage.url} alt={selectedImage.alt} />
           </Modal>
         )}
 
         <ToastContainer autoClose={2000} />
 
-        {showLoadMoreBtn && !loading && (
-          <Button onClick={this.handleLoadMore}>Load more</Button>
+        {showLoadMoreBtn && !isLoading && (
+          <Button onClick={handleLoadMore}>Load more</Button>
         )}
       </ContainerDiv>
     );
   }
-}
+
 
 export default App;
-
-
-// import React, { Component } from 'react';
-// import { ToastContainer, toast } from 'react-toastify';
-// import { animateScroll as scroll } from 'react-scroll';
-// import SearchbarHeader from '../Searchbar';
-// import ImageGallery from '../ImageGallery';
-// import Button from '../Button';
-// import Modal from '../Modal';
-// import LoaderReact from '../Loader';
-// import { fetchGallery, perPage } from '../../servise/GalleryApi';
-// import 'react-toastify/dist/ReactToastify.css';
-// import { ContainerDiv } from './App.styled';
-
-// class App extends Component {
-//   state = {
-//     searchQuery: '',
-//     showModal: false,
-//     selectedImage: '',
-//     gallery: [],
-//     page: 1,
-//     showLoadMoreBtn: false,
-//     loading: false,
-//     perPage: perPage,
-//   };
-
-//   async componentDidUpdate(prevProps, prevState) {
-//     const { searchQuery, page } = this.state;
-  
-//     if (prevState.searchQuery !== searchQuery || prevState.page !== page) {
-//       if (prevState.searchQuery !== searchQuery) {
-//         this.clearGallery();
-//       }
-  
-//       try {
-//         this.setState({ loading: true });
-  
-//         const newGallery = await this.fetchGalleryData();
-  
-//         if (newGallery.length === 0) {
-//           this.handleNoImages();
-//         } else if (newGallery.length < this.state.perPage && newGallery.length > 0) {
-//           this.handleEndOfResults();
-//         } else {
-//           this.updateGallery(newGallery);
-//         }
-  
-//         this.scrollToOldGallery();
-//       } catch (error) {
-//         this.handleError();
-//       }
-//     }
-//   }
-
-//   clearGallery() {
-//     this.setState({ showLoadMoreBtn: false, gallery: [] });
-//   }
-  
-//   async fetchGalleryData() {
-//     const { searchQuery, page, perPage } = this.state;
-//     return await fetchGallery(searchQuery, page, perPage);
-//   }
-  
-//   handleNoImages() {
-//     toast.error('Sorry, there are no images matching your search query. Please try again.');
-//     this.setState({ loading: false });
-//   }
-  
-//   handleEndOfResults() {
-//     toast.info("We're sorry, but you've reached the end of search results.");
-//     this.setState({ loading: false, showLoadMoreBtn: false });
-//   }
-  
-//   updateGallery(newGallery) {
-//     this.setState(prevState => ({
-//       gallery: [...prevState.gallery, ...newGallery],
-//       loading: false,
-//       showLoadMoreBtn: newGallery.length >= this.state.perPage,
-//     }));
-//   }
-  
-//   handleError() {
-//     toast.error('An error occurred while loading images.');
-//     this.setState({ loading: false });
-//   }
-
-//   scrollToOldGallery = () => {
-//     if (this.state.showLoadMoreBtn) {
-//       scroll.scrollToBottom({
-//         duration: 500,
-//         smooth: 'easeInOutQuad',
-//       });
-//     }
-//     return;
-//   };
-
-//   handleFormSubmit = searchQuery => {
-//     const { searchQuery: prevSearchQuery } = this.state;
-//     if (prevSearchQuery !== searchQuery) {
-//       this.setState({
-//         searchQuery,
-//         page: 1,
-//       });
-//     }
-//   };
-
-//   handleImageClick = (imageUrl, tags) => {
-//     this.setState({
-//       selectedImage: { url: imageUrl, alt: tags },
-//       showModal: true,
-//     });
-//   };
-
-//   handleCloseModal = () => {
-//     this.setState({ selectedImage: '', showModal: false });
-//   };
-
-//   handleLoadMore = () => {
-//     this.setState(prevState => ({
-//       page: prevState.page + 1,
-//     }));
-//   };
-
-//   render() {
-//     const { gallery, showModal, selectedImage, showLoadMoreBtn, loading } =
-//       this.state;
-
-//     return (
-//       <ContainerDiv>
-//         <SearchbarHeader onSubmit={this.handleFormSubmit} />
-
-//         {gallery.length > 0 && (
-//           <ImageGallery
-//             gallery={gallery}
-//             handleImageClick={this.handleImageClick}
-//           />
-//         )}
-
-//         {loading && <LoaderReact />}
-
-//         {showModal && (
-//           <Modal onClose={this.handleCloseModal}>
-//             <img src={selectedImage.url} alt={selectedImage.alt} />
-//           </Modal>
-//         )}
-
-//         <ToastContainer autoClose={2000} />
-
-//         {showLoadMoreBtn && !loading && (
-//           <Button onClick={this.handleLoadMore}>Load more</Button>
-//         )}
-//       </ContainerDiv>
-//     );
-//   }
-// }
-
-// export default App;

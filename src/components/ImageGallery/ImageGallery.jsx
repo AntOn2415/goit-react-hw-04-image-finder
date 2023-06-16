@@ -4,6 +4,10 @@ import { GalleryUl } from './ImageGallery.styled';
 import ImageGalleryItem from '../ImageGalleryItem';
 
 const ImageGallery = ({ gallery, handleImageClick }) => {
+  if (gallery.length === 0) {
+    return null;
+  }
+
   return (
     <GalleryUl>
       {gallery.map(image => (
