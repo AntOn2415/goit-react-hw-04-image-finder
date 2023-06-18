@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef} from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import { animateScroll as scroll } from 'react-scroll';
 import SearchbarHeader from '../Searchbar';
@@ -10,89 +10,87 @@ import { fetchGallery, perPage } from '../../servise/GalleryApi';
 import 'react-toastify/dist/ReactToastify.css';
 import { ContainerDiv } from './App.styled';
 
-function App () {
-  const [ searchQuery, setSearchQuery ] = useState('');
-  const [ showModal, setShowModal ] = useState(false);
-  const [ selectedImage, setSelectedImage ] = useState('')
-  const [ gallery, setGallery ] = useState([]);
-  const [ page, setPage ] = useState(1);
-  const [ showLoadMoreBtn, setShowLoadMoreBtn ] = useState(false)
-  const [ isLoading, setIsLoading ] = useState(false)
+function App() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState('');
+  const [gallery, setGallery] = useState([]);
+  const [page, setPage] = useState(1);
+  const [showLoadMoreBtn, setShowLoadMoreBtn] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const prevSearchQueryRef = useRef('');
 
-  const scrollToOldGallery = () => {
-      scroll.scrollToBottom({
-        duration: 500,
-        smooth: 'easeInOutQuad',
-      });
-  };
-
   async function fetchGalleryData() {
-    return await fetchGallery(searchQuery, page, perPage);
-  };
+    return await fetchGallery(searchQuery, page);
+  }
 
   useEffect(() => {
-    if(searchQuery === '') {
+    if (searchQuery === '') {
       return;
     }
-    
+
     const fetchData = async () => {
-      
       if (prevSearchQueryRef.current !== searchQuery) {
         clearGallery();
         prevSearchQueryRef.current = searchQuery;
       }
+
       try {
         setIsLoading(true);
-    
-        const newGallery = await fetchGalleryData();
 
-        if (newGallery.length === 0) {
+        const { hits, total } = await fetchGalleryData();
+
+        if (hits.length === 0) {
           handleNoImages();
-        } else if (newGallery.length < perPage && newGallery.length > 0) {
+        } else if (
+          total === perPage ||
+          (hits.length < perPage && hits.length > 0)
+        ) {
           handleEndOfResults();
-        };
-          updateGallery(newGallery);
-          if (page > 1){
-            scrollToOldGallery();
-          }
-          
-        
+        }
 
+        updateGallery(hits, total);
+
+        if (page > 1) {
+          scrollToOldGallery();
+        }
       } catch (error) {
         handleError();
       } finally {
         setIsLoading(false);
       }
     };
-  
+
     fetchData();
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, page]);
 
-  function updateGallery(newGallery) {
+  function updateGallery(newGallery, total) {
     setGallery(prevGallery => [...prevGallery, ...newGallery]);
     setIsLoading(false);
-    setShowLoadMoreBtn(newGallery.length >= perPage);
+    setShowLoadMoreBtn(newGallery.length >= perPage && total !== perPage);
   }
 
   function clearGallery() {
     setShowLoadMoreBtn(false);
     setGallery([]);
-  };
-  
+  }
+
   function handleNoImages() {
-    toast.error('Sorry, there are no images matching your search query. Please try again.');
+    toast.error(
+      'Sorry, there are no images matching your search query. Please try again.'
+    );
     setIsLoading(false);
   }
-  
+
   function handleEndOfResults() {
     toast.info("We're sorry, but you've reached the end of search results.");
     setIsLoading(false);
     setShowLoadMoreBtn(false);
   }
-  
+
   function handleError() {
     toast.error('An error occurred while loading images.');
     setIsLoading(false);
@@ -104,7 +102,7 @@ function App () {
   };
 
   const handleImageClick = (imageUrl, tags) => {
-    setSelectedImage({url: imageUrl, alt: tags});
+    setSelectedImage({ url: imageUrl, alt: tags });
     setShowModal(true);
   };
 
@@ -116,34 +114,36 @@ function App () {
   const handleLoadMore = () => {
     setPage(prevPage => prevPage + 1);
   };
+  const scrollToOldGallery = () => {
+    scroll.scrollMore(600, {
+      duration: 500,
+      smooth: 'easeInOutQuad',
+    });
+  };
 
-    return (
-      <ContainerDiv>
-        <SearchbarHeader onSubmit={handleFormSubmit} />
+  return (
+    <ContainerDiv>
+      <SearchbarHeader onSubmit={handleFormSubmit} />
 
-        {gallery.length !== 0 && (
-          <ImageGallery
-            gallery={gallery}
-            handleImageClick={handleImageClick}
-          />
-        )}
+      {gallery.length !== 0 && (
+        <ImageGallery gallery={gallery} handleImageClick={handleImageClick} />
+      )}
 
-        {isLoading && <LoaderReact />}
+      {isLoading && <LoaderReact />}
 
-        {showModal && (
-          <Modal onClose={handleCloseModal}>
-            <img src={selectedImage.url} alt={selectedImage.alt} />
-          </Modal>
-        )}
+      {showModal && (
+        <Modal onClose={handleCloseModal}>
+          <img src={selectedImage.url} alt={selectedImage.alt} />
+        </Modal>
+      )}
 
-        <ToastContainer autoClose={2000} />
+      <ToastContainer autoClose={2000} />
 
-        {showLoadMoreBtn && !isLoading && (
-          <Button onClick={handleLoadMore}>Load more</Button>
-        )}
-      </ContainerDiv>
-    );
-  }
-
+      {showLoadMoreBtn && !isLoading && (
+        <Button onClick={handleLoadMore}>Load more</Button>
+      )}
+    </ContainerDiv>
+  );
+}
 
 export default App;

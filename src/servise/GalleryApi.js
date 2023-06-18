@@ -9,9 +9,10 @@ async function fetchGallery(searchQuery, page) {
     const response = await axios.get(
       `${BASE_URL}?key=${apiKey}&q=${searchQuery}&image_type=photo&orientation=horizontal&safesearch=true&per_page=${perPage}&page=${page}`
     );
-    const gallery = response.data.hits;
+    const hits = response.data.hits;
+    const total = response.data.total;
 
-    return gallery;
+    return { hits, total };
   } catch (error) {
     throw new Error(error);
   }

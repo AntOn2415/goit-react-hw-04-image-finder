@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { createPortal } from 'react-dom';
 import { ModalOverlay, ModalContent } from './Modal.styled';
@@ -7,7 +7,7 @@ const modalRoot = document.querySelector('#modal-root');
 
 function Modal({ onClose, children }) {
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = e => {
       if (e.code === 'Escape') {
         onClose();
       }
@@ -31,6 +31,5 @@ Modal.propTypes = {
   onClose: PropTypes.func.isRequired,
   children: PropTypes.node.isRequired,
 };
-
 
 export default Modal;

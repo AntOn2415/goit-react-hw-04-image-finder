@@ -13,11 +13,11 @@ function Searchbar({ onSubmit }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [lastSearchQuery, setLastSearchQuery] = useState('');
 
-  const handleSearchQueryChange = (e) => {
+  const handleSearchQueryChange = e => {
     setSearchQuery(e.currentTarget.value.toLowerCase());
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = e => {
     e.preventDefault();
 
     if (searchQuery.trim() === '') {
@@ -26,6 +26,9 @@ function Searchbar({ onSubmit }) {
     }
 
     if (searchQuery === lastSearchQuery) {
+      toast.info(
+        'Sorry, the result of this request is already in front of you, try another way'
+      );
       return;
     }
 
