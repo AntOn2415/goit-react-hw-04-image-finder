@@ -47,7 +47,6 @@ function Searchbar({ onSubmit }) {
               <FaSearch />
             </IconContext.Provider>
           <ButtonLabel>
-            
             Search
           </ButtonLabel>
         </SearchFormButton>
