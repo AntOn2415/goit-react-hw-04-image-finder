@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
+import { IconContext } from 'react-icons';
+import { FaSearch } from 'react-icons/fa';
 import PropTypes from 'prop-types';
 import {
   SearchbarHeader,
@@ -41,7 +43,13 @@ function Searchbar({ onSubmit }) {
     <SearchbarHeader>
       <SearchForm onSubmit={handleSubmit}>
         <SearchFormButton type="submit">
-          <ButtonLabel>Search</ButtonLabel>
+        <IconContext.Provider value={{ color: 'blue', size: 25 }}>
+              <FaSearch />
+            </IconContext.Provider>
+          <ButtonLabel>
+            
+            Search
+          </ButtonLabel>
         </SearchFormButton>
 
         <Input
